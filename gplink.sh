@@ -23,6 +23,7 @@ case "$target_opt" in
     fi
     ;;
   *)
+    # Default = OU linkage
     if [ -n "$(echo $password | grep -Eo '[0-9a-fA-F]{32}')" ]
     then
       # Pass the Hash
