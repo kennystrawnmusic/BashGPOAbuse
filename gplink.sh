@@ -1,11 +1,11 @@
 #!/bin/bash
 
 target_opt="$1"
-domain="$3"
-user="$4"
-password="$5"
-gpo_guid="$6"
-target_ip="$7"
+domain="$2"
+user="$3"
+password="$4"
+gpo_guid="$5"
+target_ip="$6"
 
 domain_prefix="$(echo $domain | cut -d'.' -f1)"
 domain_suffix="$(echo $domain | cut -d'.' -f2)"
